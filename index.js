@@ -15,46 +15,29 @@ const server = new McpServer({
 	}
   });
 
-
-//https://symbols.chartiq.com/chiq.symbolserver.SymbolLookup.service?t=ibm&m=100&x=[XNYS,XASE,XNAS,XASX,IND_CBOM,INDXASE,INDXNAS,IND_DJI,ARCX,INDARCX,forex,mutualfund,futures]
 // const symbolServerUrl = "https://symbols.chartiq.com/chiq.symbolserver.SymbolLookup.service?"
+// Remote calls don't appear to work in this context on S&P hardware. Presumably because I've been running this server
+// with Claude Desktop which invokes node under another user account. Temporary solution is to run the symbol server locally
 const symbolServerUrl = "http://localhost:9130/symbol_lookup_service/?";
 const exchangeFilters = "[\"XNYS\",\"XASE\",\"XNAS\",\"XASX\",\"IND_CBOM\",\"INDXASE\",\"INDXNAS\",\"IND_DJI\",\"ARCX\",\"INDARCX\",\"forex\",\"mutualfund\",\"futures\"]";
 
 
-// server.tool(
-//   "symbol-search-http",
-//   "Search for a valid stock symbol",
-//   { query: z.string() },
-//   async ({ query }) => {
-// 	let fetchUrl = `t=${query}&m=100&x=${exchangeFilters}`;
-// 	let response = processRequest(fetchUrl);
-// 	// let response = await fetch(fetchUrl);
-// 	// let data = await response.json();
-// 	// let result = [];
-// 	// if (data && data.payload) {
-// 	// 	// Example symbol: IBM|International Business Machines Corp.|NYSE|XNYS
-// 	// 	let {symbols} = data.payload;
-// 	// 	result = symbols.map((symbol) => {
-// 	// 		let parts = symbol.split("|");
-// 	// 		return {
-// 	// 			symbol: parts[0],
-// 	// 			name: parts[1],
-// 	// 			exchange: parts[2]
-// 	// 		};
-// 	// 	});
-// 	// }
-// 	// return {
-// 	// 	content: [{
-// 	// 		type: "text",
-// 	// 		text: JSON.stringify(result)
-// 	// 	}]
-// 	// };
-//   }
-// );
-
-
-
+/**
+ * Tool to search for a valid stock symbol.
+ * 
+ * IMPORTANT NOTES:
+ * - This tool uses a local instance of the ChartIQ symbol server running on port 9130. (see comment above)
+ * - Ideally this would be a "resource" but it was not clear how to load resources into Claude Desktop.
+ * 
+ * 
+ * The `query` parameter is a string that can be a partial or full stock symbol or company name.
+ * 
+ * Returns json with an array of objects containing:
+ * - `symbol`: The stock symbol
+ * - `name`: The full name of the company
+ * - `exchange`: The exchange where the stock is listed
+ * - `source`: The source of the symbol (e.g. "XNYS" for NYSE, "XNAS" for NASDAQ)
+ */
 server.tool(
   "symbol-search-http",
   "Search for a valid stock symbol",
@@ -89,40 +72,11 @@ server.tool(
   }
 );
 
-
-
-
-// server.resource(
-// 	"symbol-search",
-// 	new ResourceTemplate("symbol-search://{query}", { list: undefined }),
-// 	async (uri, { query }) => {
-// 	  let fetchUrl = `${symbolServerUrl}t=${query}&m=100&x=${exchangeFilters}`;
-// 	//   let response = await fetch(fetchUrl);
-// 	//   let data = await response.json();
-// 	//   let result = [];
-// 	//   if (data && data.payload) {
-// 	// 	  // Example symbol: IBM|International Business Machines Corp.|NYSE|XNYS
-// 	// 	  let {symbols} = data.payload;
-// 	// 	  result = symbols.map((symbol) => {
-// 	// 		  let parts = symbol.split("|");
-// 	// 		  return {
-// 	// 			  symbol: parts[0],
-// 	// 			  name: parts[1],
-// 	// 			  exchange: parts[2]
-// 	// 		  };
-// 	// 	  });
-// 	//   }
-// 	  return {
-// 		  contents: [{
-// 			uri: uri.href,
-// 			text: JSON.stringify(hardResult),
-// 		  }]
-// 	  };
-// 	}
-// );
-
-
-
+/**
+ * Tool to change the main instrument symbol on the chart.
+ * The `symbol` parameter must be a valid stock symbol retrieved with the symbol-search tool.
+ * The `sessionId` parameter is used to identify the websocket connection.
+ */
 server.tool(
 	"change-symbol",
 	"Chart command: Change main instrument symbol on chart. The `symbol` parameter must me a valid stock symbol retrieved with the symbol-search tool.",
@@ -143,6 +97,15 @@ server.tool(
 		}
 	});
 
+/**
+ * Tool to add or edit series on the chart secondary to the main series.
+ * The `symbol` parameter must be a valid stock symbol retrieved with the symbol-search tool.
+ * The `options` parameter is optional and can be used to add options to the command.
+ * The `options` parameter is a string of letters representing each option:
+ * - 'c' will add the series as a comparison to the main series.
+ * - 'r' will remove a series with the specified symbol. The series symbol to remove must come from the series-info tool.
+ * - 'x' will remove all series except the main series. Ask for confirmation before removing series.
+ */
 server.tool(
 	"series",
 	"Chart command: Add or edit series on the chart secondary to the main series. When adding a series, the `symbol` parameter must me a valid stock symbol retrieved with the symbol-search tool. The `options` parameter is optional and can be used to add options to the command. The `options` parameter is a string of letters representing each option. 'c' will add the series as a comparison to the main series. 'r' will remove a series with the specified symbol. The series symbol to remove must come from the series-info tool. 'x' will remove all series except the main series. Ask for confirmation before removing series.",
@@ -166,18 +129,22 @@ server.tool(
 	}
 );
 
+/**
+ * Tool to get information about active series on the chart.
+ * The `sessionId` parameter is used to identify the websocket connection.
+ * 
+ * Returns a JSON object with an array of series objects containing:
+ * - `id`: The series symbol
+ * - `name`: The name of the series
+ * - `color`: The color of the series
+ * - `symbol`: The symbol of the series
+ */
 server.tool(
 	"series-info",
 	"Request to get information about active series on the chart.",
 	{ sessionId: z.string() },
 	async ({ sessionId }) => {
 		let command = `series -r {symbol}`;
-		// socketConnections[sessionId].send(JSON.stringify({ 
-		// 	type: "series-info", 
-		// 	command: command 
-		// }));
-		// let response = `{"series":[{"id":"GOOG","name":"comparison GOOG","color":"rgb(142, 198, 72)","symbol":"GOOG"},{"id":"IBM","name":"comparison IBM","color":"rgb(0, 175, 237)","symbol":"IBM"},{"id":"F","name":"comparison F","color":"rgb(238, 101, 46)","symbol":"F"}]}`;
-		// let jsonData = JSON.parse(response);
 		const response = await getSeriesInfo(sessionId);
 		return {
 			content: [
@@ -189,7 +156,14 @@ server.tool(
 	}
 );
 
-
+/**
+ * Experimantal websocket backchannel to send commands to the chart.
+ * This supports the tools above to send commands to the chart executor without a custom MCP client.
+ * The client must register its sessionId with the server by sending a message with type 'registerSession' and sessionId.
+ * The server will then store the websocket connection and use it to send commands.
+ * 
+ * Right now, the client connection is hard coded. See the ReadMe file for details on how to set up the chart.
+ */
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
@@ -256,23 +230,3 @@ wss.on('connection', function connection(ws) {
 		}
 	});
 });
-
-// wss.on('connection', function connection(ws, req, client) {
-//   ws.on('message', function incoming(message) {
-//     // const reversed = message.toString().split('').reverse().join('');
-//     // ws.send(JSON.stringify({ type: 'reverse', value: reversed }));
-// 	try {
-// 		let data = JSON.parse(message.toString());
-// 		if (data && data.sessionId) {
-// 			socketConnections[data.sessionId] = ws;
-// 		}
-
-// 		 ws.on('close', () => {
-// 			socketConnections[data.sessionId] = null;
-// 		});
-
-// 		//console.log("Added socket connection for sessionId:", data.sessionId, Object.keys(socketConnections).length, "total connections");
-// 	} catch (e) {}
-// 	// console.log('received: %s', message);
-//   });
-// });
