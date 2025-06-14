@@ -1,0 +1,264 @@
+<!doctype html>
+<!--
+This is a fully functional desktop-like example showing how to load a chart with a corresponding
+feature-rich user interface. It is intended mainly for larger screens and may not always render
+optimally on small devices.
+
+This template requires the Technical Analysis package. If you are using a different package, some
+features may not work.
+
+Customize this sample template as needed to meet your use case and to fit the screen size of your
+supported devices.
+-->
+<html lang="en-US">
+<head>
+<title>Advanced Chart - Powered by ChartIQ</title>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width" />
+<link rel="stylesheet" type="text/css" href="css/normalize.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/page-defaults.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/stx-chart.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/chartiq.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/webcomponents.css" media="screen" />
+<style>
+	cq-cli {
+		transform: scale(1.5);
+		transform-origin: left bottom;
+		position: absolute;
+		z-index: 100;
+		margin-left: 6em;
+	}
+
+	cq-cli .ciq-output ul {
+		width: 300px;
+	}
+
+	[ciq-mobile] cq-toggle.ciq-cli-button {
+		display: inline-block;
+	}
+</style>
+</head>
+<body>
+
+<!-- build:staContext -->
+<div class="ws-controls">
+	<input type="text" id="inputText" placeholder="Session ID" />
+	<button id="connectBtn">Connect</button>
+	<span id="status" class="session-id">Disconnected</span>
+</div>
+<cq-context>
+</cq-context>
+<!-- endbuild -->
+
+<script type="module" crossorigin="use-credentials">
+// This inline script acts as the entry point, without creating a separate external file.
+
+import "./js/chartiq.js";
+import "./js/standard.js";
+import "./js/advanced.js";
+import "./js/addOns.js";
+import { CIQ } from "./js/components.js";
+
+import getLicenseKey from "./key.js";
+getLicenseKey(CIQ);
+
+/* Uncomment the following to access deprecated functions and namespaces. */
+//import "./js/deprecated.js";
+
+/* Uncomment the following lines if you are using these plug-ins. */
+import "./plugins/cli/cli.js";
+import "./plugins/chart2music/index.js";
+//import "./plugins/activetrader/cryptoiq.js";
+//import "./plugins/chartexplainer/plugin.js";
+//import "./plugins/genericPlugin/plugin.js";
+//import "./plugins/gonogo/goNoGo.js";
+//import "./plugins/lowfrequency/index.js";
+//import "./plugins/scriptiq/scriptiq.js";
+import "./plugins/signaliq/signaliqDialog.js";
+import "./plugins/signaliq/signaliq-marker.js";
+import "./plugins/signaliq/signaliq-paintbar.js";
+import "./plugins/studybrowser/index.js";
+//import "./plugins/technicalinsights/components.js";
+//import "./plugins/technicalviews/components.js";
+//import "./plugins/tfc/tfc-loader.js";
+//import "./plugins/timespanevent/timespanevent.js";
+//import "./plugins/visualearnings/visualearnings.js";
+
+/* Uncomment the following for the L2 simulator (required for the activetrader sample). */
+//import "./examples/feeds/L2_simulator.js";
+
+/* Template-specific imports */
+import getDefaultConfig from "./js/defaultConfiguration.js";
+
+//import "./examples/help/helpContent.js";
+
+import PerfectScrollbar from "./js/thirdparty/perfect-scrollbar.esm.js";
+import EmojiPopover from "./js/thirdparty/emoji-popover.es.js";
+
+import quotefeed from "./examples/feeds/quoteFeedSimulator.js";
+import "./examples/feeds/symbolLookupChartIQ.js";
+
+import "./examples/markets/marketDefinitionsSample.js";
+import "./examples/markets/marketSymbologySample.js";
+import "./examples/markets/timezones.js";
+
+import marker from "./examples/markers/markersSample.js";
+import "./examples/markers/tradeAnalyticsSample.js";
+import "./examples/markers/videoSample.js";
+
+import "./examples/translations/translationSample.js";
+
+/* Remove if not using the forecasting simulator (required for the forecasting sample). */
+import forecastfeed from "./examples/feeds/quoteFeedForecastSimulator.js";
+
+/* Uncomment the following import statement to enable the Option Sentiment by Strike study. */
+//import "./plugins/crosssection/studies/sentimentByStrike.js";
+
+/*
+ * Uncomment the following import statement to access the option chain simulator for option-based
+ * functionality, such as the Option Sentiment By Strike study.
+ *
+ * Make the option chain simulator the chart data source by setting the quoteFeed property (in
+ * the object parameter of the getDefaultConfig function call below) to the optionfeed variable,
+ * for example:
+ *
+ *     const config = getDefaultConfig({
+ *         markerFeed: marker.MarkersSample,
+ *         scrollStyle: PerfectScrollbar,
+ *         quoteFeed: optionfeed,  // Provides simulated quote data and option data.
+ *         forecastQuoteFeed: forecastfeed,
+ *         nameValueStore: CIQ.NameValueStore
+ *     });
+ */
+//import optionfeed from "./examples/feeds/optionChainSimulator.js";
+
+// Create and customize default configuration
+
+const config = getDefaultConfig({
+	markerFeed: marker.MarkersSample,
+	scrollStyle: PerfectScrollbar,
+	emojiPicker: EmojiPopover,
+	quoteFeed: quotefeed,
+	forecastQuoteFeed: forecastfeed,
+	nameValueStore: CIQ.NameValueStore
+});
+
+let aiReady, executor;
+
+// Use dynamic load on demand as an alternative to static import
+// config.plugins.tfc.load = () => import("./plugins/tfc/tfc-loader.js");
+
+// config.plugins.technicalInsights.token = ""; // custom token for plugin
+// config.plugins.technicalInsights.load = () =>
+// 	import("./plugins/technicalinsights/components.js");
+
+// config.plugins.technicalViews.token = ""; // custom token for plugin
+// config.plugins.technicalViews.load = () =>
+// 	import("./plugins/technicalviews/components.js");
+
+// Create the chart...<!-- build:remove -->
+// ChartIQ internal development will need to load the html context first...
+CIQ.loadUI(
+	"examples/templates/partials/sample-template-advanced-context.html",
+	document.querySelector("cq-context"),
+	function () {
+		//<!-- endbuild -->
+
+		let stxx = config.createChart();
+		// Alternatively, to load the UI "asynchronously", use the following:
+		//let callback = () => {};
+		//let stxx = config.createChartAsync(null, callback);
+		// Simulate L2 data
+		// In your implementation, you must instead load L2 data
+		// using https://documentation.chartiq.com/CIQ.ChartEngine.html#updateCurrentMarketData
+		//CIQ.simulateL2({ stx: stxx, onInterval: 1300, onTrade: true });
+
+		//...then add whatever code you wish!<!-- build:remove -->
+		//ChartIQ internal development tweaks go here
+		Object.assign(window, { CIQ, stxx });
+
+		aiReady = document.querySelector("cq-cli");
+		executor = aiReady.getExecutor();
+	}
+);
+
+let ws;
+const statusDiv = document.getElementById("status");
+const connectBtn = document.getElementById("connectBtn");
+const input = document.getElementById("inputText");
+
+function getSeriesInfo() {
+	let chartSeries = window.stxx.chart.series;
+	const series = [];
+	for (const [key, value] of Object.entries(chartSeries)) {
+		series.push({
+			id: value.id,
+			name: value.parameters?.name,
+			color: value.parameters?.color,
+			symbol: value.parameters?.symbol
+		});
+	}
+	return { series };
+}
+
+window.getSeriesInfo = getSeriesInfo;
+
+function connect() {
+	ws = new WebSocket("ws://" + window.location.hostname + ":8089");
+	ws.onopen = () => {
+		statusDiv.textContent = "Connected";
+		statusDiv.style.color = "green";
+		ws.send(
+			JSON.stringify({
+				type: "registerSession",
+				sessionId: input.value || "default-session"
+			})
+		);
+	};
+	ws.onclose = () => {
+		statusDiv.textContent = "Disconnected.";
+		statusDiv.style.color = "red";
+	};
+	ws.onerror = (err) => {
+		statusDiv.textContent = "Error connecting to server.";
+		statusDiv.style.color = "red";
+	};
+	ws.onmessage = (event) => {
+		console.log(event.data);
+		let data = null;
+		try {
+			data = JSON.parse(event.data);
+		} catch (e) {
+			data = {};
+		}
+
+		switch (data.type) {
+			case "command":
+				executor(data.command);
+				break;
+			case "getSeriesInfo":
+				let response = JSON.stringify(getSeriesInfo());
+				console.log("Series Info Response: ", response);
+				ws.send(
+					JSON.stringify({
+						type: "seriesInfoResponse",
+						requestId: data.requestId,
+						value: getSeriesInfo()
+					})
+				);
+				break;
+		}
+	};
+}
+
+connectBtn.onclick = () => {
+	if (!ws || ws.readyState === WebSocket.CLOSED) {
+		connect();
+	}
+};
+
+//<!-- endbuild -->
+</script>
+</body>
+</html>
