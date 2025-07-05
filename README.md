@@ -7,6 +7,28 @@ This project uses the @modelcontextprotocol library from Anthropic to run an MCP
 
 The last two points above presently work through a websocket back channel, connected directly to the chart. This allows any MCP client to manipulate a chart without  having direct control over it. This is only one possible solution. An alternative solution would be to develop a custom MCP client as part of a complete chart assisted AI application.
 
+## Example queries
+
+"set the chart to toyota"
+
+"now compare this to the top 3 US car manufacturers"
+
+The model can query the color of secondary series. Change one of them to a yellow color and try the following prompt:
+
+"remove the yellow series"
+
+## Instructions
+
+This demo runs both the client and server on the same system using `localhost` as the address.
+
+1. Set up the chart front-end using the instructions below.
+2. The server is in the index.js file. Run `npm install` to install the required packages.
+3. Configure an MCP client to run the MCP server. I have been using Claude Desktop for my testing. Instructions for setting up can be found here: https://modelcontextprotocol.io/quickstart/user
+4. Ensure the mcp server is running in your AI app before attempting the websocket conenction. Then load the chart page.
+5. You will see a "Session Id" input and a connect button. Enter any string value as the session Id, it doesn't matter what. I use jsut the letter "a". Then press the connect button. The status indicator should turn green and say "Connected" when it establishes a connection to the MCP server running at `localhost::8089`
+6. Go to your AI app. Begin your conversion by informing the model of the session ID with a prompt like this: "when interacting with the chart, your session id is: a"
+7. Begin chatting with the model, asking it to do things to the chart.
+
 ## Setting Up The Chart
 Based off of Sample Template Advanced. A copy of the complete file is in examples/chart-template/ in this project. This was written with version 9.6 so the template may need some updating.
 
